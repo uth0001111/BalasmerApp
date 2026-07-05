@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقيت الصلاة - بلسمر</title>
+    
+    <!-- ربط ملف الهوية لتحويل الموقع إلى تطبيق PWA -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- ربط ملف التنسيق والألوان الخارجي -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- الخطوط والأيقونات الخارجية -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- الهيدر العلوي (معلومات المدينة، التاريخ، زر التنبيه، والطقس) -->
+        <header class="main-header">
+            <div class="location-info">
+                <h1><i class="fa-solid fa-mosque"></i> مواقيت الصلاة</h1>
+                <p>مدينة بلسمر، منطقة عسير</p>
+                <p id="hijri-date" class="date-text">جاري تحميل التاريخ...</p>
+                <button id="enable-audio-btn" class="audio-btn"><i class="fa-solid fa-bell-slash"></i> تفعيل المنبه</button>
+            </div>
+            <div class="weather-badge">
+                <i class="fa-solid fa-temperature-half"></i>
+                <span id="temp-value">--</span>°م
+            </div>
+        </header>
+
+        <!-- قائمة المواقيت الكاملة -->
+        <div class="times-list">
+            <div class="time-card" id="card-Fajr">
+                <span class="prayer-name">الفجر</span>
+                <span class="prayer-time" id="Fajr">--:--</span>
+            </div>
+            <div class="time-card visual-break" id="card-Sunrise">
+                <span class="prayer-name"><i class="fa-solid fa-sun"></i> شروق الشمس</span>
+                <span class="prayer-time" id="Sunrise">--:--</span>
+            </div>
+            <div class="time-card special-card" id="card-Dhuhr-extra">
+                <span class="prayer-name">صلاة الضحى</span>
+                <span class="prayer-time" id="Dhuha">--:--</span>
+            </div>
+            <div class="time-card" id="card-Dhuhr">
+                <span class="prayer-name">الظهر</span>
+                <span class="prayer-time" id="Dhuhr">--:--</span>
+            </div>
+            <div class="time-card" id="card-Asr">
+                <span class="prayer-name">العصر</span>
+                <span class="prayer-time" id="Asr">--:--</span>
+            </div>
+            <div class="time-card" id="card-Maghrib">
+                <span class="prayer-name">المغرب</span>
+                <span class="prayer-time" id="Maghrib">--:--</span>
+            </div>
+            <div class="time-card" id="card-Isha">
+                <span class="prayer-name">العشاء</span>
+                <span class="prayer-time" id="Isha">--:--</span>
+            </div>
+            <div class="time-card special-card" id="card-Midnight">
+                <span class="prayer-name"><i class="fa-solid fa-moon"></i> منتصف الليل</span>
+                <span class="prayer-time" id="Midnight">--:--</span>
+            </div>
+            <div class="time-card special-card" id="card-LastThird">
+                <span class="prayer-name"><i class="fa-solid fa-star"></i> الثلث الأخير</span>
+                <span class="prayer-time" id="LastThird">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ربط ملف البرمجة والمحرك الذكي (تأكد أنه src) -->
+    <script src="app.js"></script>
+</body>
+</html>
