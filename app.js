@@ -1,151 +1,187 @@
-// --- 1. متغيرات النظام وحفظ الحالة الدائمة ---
-let prayerTimes = {};
-let notificationsEnabled = localStorage.getItem('prayerNotificationsEnabled') === 'true';
+// --- 1. إحداثيات بلسمر الدقيقة لحساب المواقيت والطقس ---
+const LAT = 18.9634;
+const LNG = 42.1381;
 
-// إحداثيات افتراضية (مثال: الرياض) في حال لم يتم تفعيل الـ GPS فوراً
-let userLatitude = 24.7136;
-let userLongitude = 46.6753;
+// مصادر ملفات الصوت
+const PRE_AZAN_AUDIO_URL = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"; 
+const AZAN_TAKBEER_URL = "https://download.tvquran.com/download/Seasons/athan/01-athan.mp3"; 
 
-// --- 2. تشغيل التطبيق عند التحميل ---
+let preAzanAudio = new Audio(PRE_AZAN_AUDIO_URL);
+let azanTakbeerAudio = new Audio(AZAN_TAKBEER_URL);
+let audioEnabled = false;
+let prayerTimesToday = {};
+
+// --- 2. تشغيل التطبيق وفحص الحالة الدائمة عند التحميل ---
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-    setupNotificationButton();
+    // التحقق مما إذا كان المستخدم قد فعّل المنبه سابقاً في ذاكرة الجهاز
+    const savedAudioStatus = localStorage.getItem('balasmerAudioEnabled');
+    const audioBtn = document.getElementById('enable-audio-btn');
+
+    if (savedAudioStatus === 'true' && audioBtn) {
+        audioEnabled = true;
+        audioBtn.innerHTML = '<i class="fa-solid fa-bell"></i> المنبه نشط دائماً ✅';
+        audioBtn.classList.add('active');
+        
+        // تفعيل أولي صامت لتهيئة الأجهزة (خاصة iOS) للعمل في الخلفية
+        preAzanAudio.play().then(() => { preAzanAudio.pause(); }).catch(e => console.log(e));
+        azanTakbeerAudio.play().then(() => { azanTakbeerAudio.pause(); }).catch(e => console.log(e));
+    }
+
+    // إعداد حدث الضغط على الزر للتبديل والحفظ المستمر
+    if (audioBtn) {
+        audioBtn.addEventListener('click', function() {
+            if (!audioEnabled) {
+                // تفعيل المنبه وحفظ الحالة
+                audioEnabled = true;
+                localStorage.setItem('balasmerAudioEnabled', 'true');
+                this.innerHTML = '<i class="fa-solid fa-bell"></i> المنبه نشط دائماً ✅';
+                this.classList.add('active');
+                
+                // تهيئة صامتة سريعة للمتصفح
+                preAzanAudio.play().then(() => { preAzanAudio.pause(); }).catch(e => console.log(e));
+                azanTakbeerAudio.play().then(() => { azanTakbeerAudio.pause(); }).catch(e => console.log(e));
+            } else {
+                // إلغاء تفعيل المنبه وحفظ الحالة الجديد
+                audioEnabled = false;
+                localStorage.setItem('balasmerAudioEnabled', 'false');
+                this.innerHTML = '<i class="fa-solid fa-bell-slash"></i> تفعيل المنبه الصوتي';
+                this.classList.remove('active');
+            }
+        });
+    }
 });
 
-function initApp() {
-    // محاولة الحصول على الموقع الجغرافي الدقيق للمستخدم
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                userLatitude = position.coords.latitude;
-                userLongitude = position.coords.longitude;
-                calculateAndDisplayPrayers();
-            },
-            (error) => {
-                console.log("تم استخدام الموقع الافتراضي (الرياض):", error.message);
-                calculateAndDisplayPrayers();
-            }
-        );
-    } else {
-        calculateAndDisplayPrayers();
-    }
+// --- 3. جلب المواقيت عبر الـ API لبلسمر ---
+async function getPrayerTimes() {
+    try {
+        const response = await fetch(`https://api.aladhan.com/v1/timings?latitude=${LAT}&longitude=${LNG}&method=4`);
+        const data = await response.json();
+        
+        if(data.code === 200) {
+            const timings = data.data.timings;
+            const dateInfo = data.data.date.hijri;
 
-    // إعادة الحساب تلقائياً كل دقيقة للاطمئنان وتحديث الوقت الحاضر
-    setInterval(calculateAndDisplayPrayers, 60000);
-}
+            // تحديث التاريخ الهجري
+            document.getElementById('hijri-date').innerText = `${dateInfo.day} ${dateInfo.month.ar} ${dateInfo.year} هـ`;
 
-// --- 3. إعداد زر التنبيهات ومزامنة الحالة المحفوظة ---
-function setupNotificationButton() {
-    const notifyBtn = document.getElementById('notification-btn'); // تأكد أن معرف الزر في index.html هو notification-btn
-    if (!notifyBtn) return;
+            // حساب وقت الضحى الخام
+            const dhuhaRawTime = calculateDhuhaRaw(timings.Sunrise);
 
-    // تحديث شكل الزر بناءً على الحالة المحفوظة في الجهاز
-    updateButtonUI(notifyBtn, notificationsEnabled);
+            // حفظ المواقيت في القاموس للفحص الزمني (تم تضمين الضحى هنا)
+            prayerTimesToday = {
+                "Fajr": timings.Fajr,
+                "Dhuha": dhuhaRawTime,
+                "Dhuhr": timings.Dhuhr,
+                "Asr": timings.Asr,
+                "Maghrib": timings.Maghrib,
+                "Isha": timings.Isha
+            };
 
-    notifyBtn.addEventListener('click', async () => {
-        if (!notificationsEnabled) {
-            // طلب إذن التنبيهات من النظام (آيفون / أندرويد)
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                notificationsEnabled = true;
-                localStorage.setItem('prayerNotificationsEnabled', 'true');
-                showToast("تم تفعيل التنبيهات بنجاح وجاري حفظ الاختيار ✅");
-                testNotification(); // إرسال تنبيه تجريبي فوري للتأكد
-            } else {
-                showToast("يرجى تفعيل إذن التنبيهات من إعدادات الجوال ⚠️");
-            }
-        } else {
-            // إيقاف التنبيهات
-            notificationsEnabled = false;
-            localStorage.setItem('prayerNotificationsEnabled', 'false');
-            showToast("تم إيقاف التنبيهات 🔕");
+            // حقن الأوقات داخل الـ HTML بصيغة 12 ساعة
+            document.getElementById('Fajr').innerText = convertTo12Hr(timings.Fajr);
+            document.getElementById('Sunrise').innerText = convertTo12Hr(timings.Sunrise);
+            document.getElementById('Dhuhr').innerText = convertTo12Hr(timings.Dhuhr);
+            document.getElementById('Asr').innerText = convertTo12Hr(timings.Asr);
+            document.getElementById('Maghrib').innerText = convertTo12Hr(timings.Maghrib);
+            document.getElementById('Isha').innerText = convertTo12Hr(timings.Isha);
+            document.getElementById('Dhuha').innerText = convertTo12Hr(dhuhaRawTime);
+            
+            // حساب أوقات الليل
+            calculateNightTimes(timings.Maghrib, timings.Fajr);
         }
-        updateButtonUI(notifyBtn, notificationsEnabled);
-    });
-}
-
-// تحديث واجهة زر التنبيه بصرياً
-function updateButtonUI(button, isEnabled) {
-    if (isEnabled) {
-        button.innerText = "🔔 التنبيهات: مفعلة دائمًا";
-        button.style.backgroundColor = "#2ecc71"; // لون أخضر
-    } else {
-        button.innerText = "🔕 التنبيهات: معطلة";
-        button.style.backgroundColor = "#e74c3c"; // لون أحمر
+    } catch (error) {
+        console.error("خطأ في جلب مواقيت الصلاة:", error);
     }
 }
 
-// --- 4. حساب أوقات الصلاة فلكياً (تحديث تلقائي يومي) ---
-function calculateAndDisplayPrayers() {
+// --- 4. رصد الوقت الحالي كل ثانية لإطلاق المنبهات ---
+function checkAlarmSystem() {
+    if (!audioEnabled || Object.keys(prayerTimesToday).length === 0) return;
+
     const now = new Date();
-    
-    // هنا يتم تطبيق المعادلات الفلكية بناءً على التاريخ (now) والموقع (userLatitude, userLongitude)
-    // ملاحظة: هذا تمثيل للحساب ويجب ربطه بالدوال الرياضية الموجودة لديك مسبقاً
-    prayerTimes = {
-        Fajr: "04:30",
-        Dhuhr: "12:15",
-        Asr: "15:40",
-        Maghrib: "18:45",
-        Isha: "20:15"
-    };
+    const currentHours = String(now.getHours()).padStart(2, '0');
+    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+    const currentSeconds = now.getSeconds();
+    const currentTimeStr = `${currentHours}:${currentMinutes}`;
 
-    // عرض الأوقات في واجهة التطبيق
-    document.getElementById('fajr-time').innerText = prayerTimes.Fajr;
-    document.getElementById('dhuhr-time').innerText = prayerTimes.Dhuhr;
-    document.getElementById('asr-time').innerText = prayerTimes.Asr;
-    document.getElementById('maghrib-time').innerText = prayerTimes.Maghrib;
-    document.getElementById('isha-time').innerText = prayerTimes.Isha;
+    // حساب الوقت بعد 5 دقائق للتنبيه المبكر
+    const fiveMinutesLater = new Date(now.getTime() + 5 * 60 * 1000);
+    const futureHours = String(fiveMinutesLater.getHours()).padStart(2, '0');
+    const futureMinutes = String(fiveMinutesLater.getMinutes()).padStart(2, '0');
+    const futureTimeStr = `${futureHours}:${futureMinutes}`;
 
-    // فحص ما إذا كان وقت الأذان الحالي قد حان لإطلاق التنبيه
-    checkPrayerTime(now);
-}
+    for (const [prayer, timeStr] of Object.entries(prayerTimesToday)) {
+        // التنبيه قبل الموعد بـ 5 دقائق
+        if (futureTimeStr === timeStr && currentSeconds === 0) {
+            preAzanAudio.play().catch(e => console.log(e));
+        }
 
-// --- 5. فحص وقت الأذان وإرسال التنبيه الحقيقي ---
-function checkPrayerTime(now) {
-    if (!notificationsEnabled) return;
-
-    const currentTimeString = now.toTimeString().split(' ')[0].substring(0, 5); // صيغة "HH:MM"
-
-    // مصفوفة أسماء الصلوات بالعربي للظهور في التنبيه
-    const prayerNamesArabic = { Fajr: "الفجر", Dhuhr: "الظهر", Asr: "العصر", Maghrib: "المغرب", Isha: "العشاء" };
-
-    for (let key in prayerTimes) {
-        if (prayerTimes[key] === currentTimeString && now.getSeconds() === 0) {
-            sendNotification(`حانت الآن مواقيت صلاة ${prayerNamesArabic[key]} حسب توقيتك المحلي 🕋`);
+        // التنبيه عند حلول الوقت (تشغيل التكبيرات لمدة 15 ثانية فقط)
+        if (currentTimeStr === timeStr && currentSeconds === 0) {
+            azanTakbeerAudio.currentTime = 0;
+            azanTakbeerAudio.play().catch(e => console.log(e));
+            
+            setTimeout(() => {
+                azanTakbeerAudio.pause();
+            }, 15000); 
         }
     }
 }
 
-// دالة إرسال التنبيه لنظام التشغيل
-function sendNotification(message) {
-    if ('serviceWorker' in navigator && notificationsEnabled) {
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification("تطبيق بلسمر (مواقيت الصلاة)", {
-                body: message,
-                icon: 'icon.png', // تأكد من وجود صورة الشعار بهذا الاسم أو غيرها
-                vibrate: [200, 100, 200]
-            });
-        });
-    } else if (Notification.permission === 'granted' && notificationsEnabled) {
-        new Notification("تطبيق بلسمر (مواقيت الصلاة)", { body: message });
+// --- 5. جلب درجة الحرارة اللحظية ---
+async function getWeather() {
+    try {
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LNG}&current_weather=true`);
+        const data = await response.json();
+        if(data.current_weather) {
+            const temp = Math.round(data.current_weather.temperature);
+            document.getElementById('temp-value').innerText = temp;
+        }
+    } catch (error) {
+        console.error("خطأ في جلب الطقس:", error);
     }
 }
 
-// تنبيه تجريبي فوري عند التفعيل لأول مرة
-function testNotification() {
-    sendNotification("تهانينا! تنبيهات صلوات عائلة أبا إياد تعمل الآن بنجاح ولن تنطفئ مجدداً 🛡️✨");
+function convertTo12Hr(timeStr) {
+    if(!timeStr) return "--:--";
+    let [hours, minutes] = timeStr.split(':');
+    hours = parseInt(hours);
+    const ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
 }
 
-// إشعار صغير يظهر أسفل الشاشة (Toast) لتأكيد العمليات
-function showToast(text) {
-    let toast = document.getElementById("toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "toast";
-        toast.style = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:20px; z-index:10000; font-family:sans-serif;";
-        document.body.appendChild(toast);
-    }
-    toast.innerText = text;
-    toast.style.display = "block";
-    setTimeout(() => { toast.style.display = "none"; }, 4000);
+function calculateDhuhaRaw(sunriseStr) {
+    let [hours, minutes] = sunriseStr.split(':').map(Number);
+    minutes += 15; 
+    if (minutes >= 60) { minutes -= 60; hours += 1; }
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
+
+function calculateNightTimes(maghribStr, fajrStr) {
+    let [mHours, mMinutes] = maghribStr.split(':').map(Number);
+    let [fHours, fMinutes] = fajrStr.split(':').map(Number);
+    let maghribInMinutes = mHours * 60 + mMinutes;
+    let fajrInMinutes = fHours * 60 + fMinutes;
+    if (fajrInMinutes < maghribInMinutes) fajrInMinutes += 24 * 60;
+    let nightDuration = fajrInMinutes - maghribInMinutes;
+
+    let midnightInMinutes = maghribInMinutes + (nightDuration / 2);
+    document.getElementById('Midnight').innerText = convertTo12Hr(minutesToTimeStr(midnightInMinutes % (24 * 60)));
+
+    let lastThirdInMinutes = maghribInMinutes + (nightDuration * 2 / 3);
+    document.getElementById('LastThird').innerText = convertTo12Hr(minutesToTimeStr(lastThirdInMinutes % (24 * 60)));
+}
+
+function minutesToTimeStr(totalMinutes) {
+    let hours = Math.floor(totalMinutes / 60);
+    let minutes = Math.floor(totalMinutes % 60);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+// الإطلاق والتحديث الدوري
+getPrayerTimes();
+getWeather();
+setInterval(checkAlarmSystem, 1000);
+setInterval(getWeather, 15 * 60 * 1000);
