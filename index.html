@@ -13,16 +13,20 @@
             background-color: #0f172a;
             color: #f8fafc;
             margin: 0;
-            padding: 10px;
+            padding: 15px;
         }
         .app-container {
-            max-width: 500px;
+            max-width: 100%;
+            width: 100%;
             margin: 0 auto;
-            padding: 10px;
+            box-sizing: border-box;
+        }
+        @media(min-width: 500px) {
+            .app-container { max-width: 480px; }
         }
         .main-header {
             text-align: center;
-            padding: 20px 10px;
+            padding: 20px 15px;
             background: linear-gradient(135deg, #065f46, #0f766e);
             border-radius: 15px;
             margin-bottom: 15px;
@@ -49,12 +53,14 @@
             background-color: #1e293b;
             border-radius: 12px;
             padding: 15px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border-right: 4px solid #10b981;
+            box-sizing: border-box;
+            width: 100%;
         }
         .prayer-name {
             font-size: 18px;
@@ -70,22 +76,22 @@
             background-color: #f59e0b;
             color: #0f172a;
             border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 12px 20px;
+            border-radius: 25px;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
             width: 100%;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
+            box-sizing: border-box;
+            display: block;
+            text-align: center;
         }
         .audio-btn.active {
             background-color: #10b981;
             color: white;
         }
-        
-        /* تنسيق صندوق البوصلة */
         .qibla-box {
             background: #1e293b; 
             color: white; 
@@ -94,6 +100,8 @@
             border-radius: 12px; 
             text-align: center; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            width: 100%;
         }
         .compass-ring {
             position: relative; 
@@ -130,30 +138,29 @@
             background: #10b981; 
             color: white; 
             border: none; 
-            padding: 10px 16px; 
+            padding: 12px 16px; 
             border-radius: 6px; 
             font-weight: bold; 
             cursor: pointer; 
             width: 100%;
             font-size: 15px;
+            box-sizing: border-box;
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="app-container">
         <div class="main-header">
-            <div class="location-info">
-                <h1>مواقيت الصلاة في بلسمر</h1>
-                <p id="hijri-date">جارٍ التحميل...</p>
-                <div class="weather-info">درجة الحرارة الآن: <span id="temp-value">--</span> °م</div>
-            </div>
+            <h1>مواقيت الصلاة في بلسمر</h1>
+            <p id="hijri-date">جارٍ التحميل...</p>
+            <div class="weather-info">درجة الحرارة الآن: <span id="temp-value">--</span> °م</div>
         </div>
 
         <button id="enable-audio-btn" class="audio-btn">
             <i class="fa-solid fa-bell-slash"></i> تفعيل المنبه الصوتي
         </button>
 
-        <!-- قائمة مواقيت الصلاة الأصلية بالكامل -->
         <div class="prayer-card">
             <span class="prayer-name">الفجر</span>
             <span class="prayer-time" id="Fajr">--:--</span>
@@ -191,7 +198,6 @@
             <span class="prayer-time" id="LastThird">--:--</span>
         </div>
 
-        <!-- قسم بوصلة اتجاه القبلة اللحظي المتفاعل -->
         <div class="qibla-box">
             <h3 style="margin-top: 0; color: #10b981;">🧭 اتجاه القبلة اللحظي</h3>
             <p id="qibla-status" style="font-size: 14px;">اضغط على الزر بالأسفل لتفعيل البوصلة</p>
