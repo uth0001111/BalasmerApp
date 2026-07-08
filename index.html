@@ -4,76 +4,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مواقيت الصلاة - بلسمر</title>
-    
-    <!-- ربط ملف الهوية لتحويل الموقع إلى تطبيق PWA -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- ربط ملف التنسيق والألوان الخارجي -->
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- الخطوط والأيقونات الخارجية -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 10px;
+            display: block;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 10px;
+            background: linear-gradient(135deg, #065f46, #0f766e);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #ffffff;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: #ccfbf1;
+        }
+        .weather-widget {
+            text-align: center;
+            font-size: 16px;
+            margin: 10px 0;
+            color: #38bdf8;
+            font-weight: bold;
+        }
+        .prayer-card {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-right: 4px solid #10b981;
+        }
+        .prayer-row {
+            display: table-row;
+        }
+        .prayer-name {
+            display: table-cell;
+            font-size: 18px;
+            font-weight: bold;
+            vertical-align: middle;
+            color: #f1f5f9;
+        }
+        .prayer-time {
+            display: table-cell;
+            text-align: left;
+            font-size: 18px;
+            font-weight: bold;
+            color: #10b981;
+            vertical-align: middle;
+        }
+        .current-prayer {
+            background: linear-gradient(to left, #065f46, #1e293b);
+            border-right: 4px solid #34d399;
+        }
+        .current-prayer .prayer-time {
+            color: #34d399;
+        }
+        
+        /* تصميم قسم البوصلة المطور */
+        .qibla-box {
+            background: #1e293b; 
+            color: white; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .compass-ring {
+            position: relative; 
+            width: 120px; 
+            height: 120px; 
+            margin: 15px auto; 
+            border: 4px solid #334155; 
+            border-radius: 50%; 
+            background: #0f172a;
+        }
+        .compass-needle {
+            position: absolute; 
+            top: 10%; 
+            left: 50%; 
+            width: 6px; 
+            height: 50%; 
+            background: #ef4444; 
+            transform-origin: bottom center; 
+            transform: translateX(-50%) rotate(0deg); 
+            transition: transform 0.1s ease; 
+            border-radius: 3px;
+        }
+        .center-dot {
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 10px; 
+            height: 10px; 
+            background: #10b981; 
+            border-radius: 50%; 
+            transform: translate(-50%, -50%);
+        }
+        .action-btn {
+            background: #10b981; 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            width: 100%;
+            font-size: 15px;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>مواقيت الصلاة في بلسمر</h1>
+            <p id="hijri-date">التاريخ الهجري الحالي</p>
+            <div class="weather-widget">درجة الحرارة الآن: <span id="temp-value">--</span> °م</div>
+        </div>
 
-    <div class="app-container">
-        <!-- الهيدر العلوي (معلومات المدينة، التاريخ، زر التنبيه، والطقس) -->
-        <header class="main-header">
-            <div class="location-info">
-                <h1><i class="fa-solid fa-mosque"></i> مواقيت الصلاة</h1>
-                <p>مدينة بلسمر، منطقة عسير</p>
-                <p id="hijri-date" class="date-text">جاري تحميل التاريخ...</p>
-                <button id="enable-audio-btn" class="audio-btn"><i class="fa-solid fa-bell-slash"></i> تفعيل المنبه</button>
+        <div id="prayer-list">
             </div>
-            <div class="weather-badge">
-                <i class="fa-solid fa-temperature-half"></i>
-                <span id="temp-value">--</span>°م
-            </div>
-        </header>
 
-        <!-- قائمة المواقيت الكاملة -->
-        <div class="times-list">
-            <div class="time-card" id="card-Fajr">
-                <span class="prayer-name">الفجر</span>
-                <span class="prayer-time" id="Fajr">--:--</span>
+        <div class="qibla-box">
+            <h3 style="margin-top: 0; color: #10b981;">🧭 اتجاه القبلة اللحظي</h3>
+            <p id="qibla-status" style="font-size: 14px;">اضغط على الزر بالأسفل لتفعيل البوصلة</p>
+            
+            <div class="compass-ring">
+                <div id="qibla-arrow" class="compass-needle"></div>
+                <div class="center-dot"></div>
             </div>
-            <div class="time-card visual-break" id="card-Sunrise">
-                <span class="prayer-name"><i class="fa-solid fa-sun"></i> شروق الشمس</span>
-                <span class="prayer-time" id="Sunrise">--:--</span>
+
+            <div style="font-size: 14px; margin-bottom: 12px;">
+                <span>اتجاه جوالك الحالي: </span><span id="current-heading" style="font-weight: bold; color: #38bdf8;">--°</span>
             </div>
-            <div class="time-card special-card" id="card-Dhuhr-extra">
-                <span class="prayer-name">صلاة الضحى</span>
-                <span class="prayer-time" id="Dhuha">--:--</span>
-            </div>
-            <div class="time-card" id="card-Dhuhr">
-                <span class="prayer-name">الظهر</span>
-                <span class="prayer-time" id="Dhuhr">--:--</span>
-            </div>
-            <div class="time-card" id="card-Asr">
-                <span class="prayer-name">العصر</span>
-                <span class="prayer-time" id="Asr">--:--</span>
-            </div>
-            <div class="time-card" id="card-Maghrib">
-                <span class="prayer-name">المغرب</span>
-                <span class="prayer-time" id="Maghrib">--:--</span>
-            </div>
-            <div class="time-card" id="card-Isha">
-                <span class="prayer-name">العشاء</span>
-                <span class="prayer-time" id="Isha">--:--</span>
-            </div>
-            <div class="time-card special-card" id="card-Midnight">
-                <span class="prayer-name"><i class="fa-solid fa-moon"></i> منتصف الليل</span>
-                <span class="prayer-time" id="Midnight">--:--</span>
-            </div>
-            <div class="time-card special-card" id="card-LastThird">
-                <span class="prayer-name"><i class="fa-solid fa-star"></i> الثلث الأخير</span>
-                <span class="prayer-time" id="LastThird">--:--</span>
-            </div>
+            
+            <button id="enable-qibla-btn" class="action-btn" onclick="initQibla()">تفعيل حساس الاتجاه</button>
         </div>
     </div>
 
-    <!-- ربط ملف البرمجة والمحرك الذكي (تأكد أنه src) -->
-    <script src="app.js"></script>
+    <script src="app.js?v=1.1"></script>
 </body>
 </html>
