@@ -6,6 +6,7 @@
     <title>مواقيت الصلاة - بلسمر</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -13,14 +14,13 @@
             color: #f8fafc;
             margin: 0;
             padding: 10px;
-            display: block;
         }
-        .container {
+        .app-container {
             max-width: 500px;
             margin: 0 auto;
             padding: 10px;
         }
-        .header {
+        .main-header {
             text-align: center;
             padding: 20px 10px;
             background: linear-gradient(135deg, #065f46, #0f766e);
@@ -28,20 +28,20 @@
             margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .header h1 {
+        .main-header h1 {
             margin: 0;
             font-size: 22px;
             color: #ffffff;
         }
-        .header p {
+        .main-header p {
             margin: 5px 0 0 0;
             font-size: 14px;
             color: #ccfbf1;
         }
-        .weather-widget {
+        .weather-info {
             text-align: center;
             font-size: 16px;
-            margin: 10px 0;
+            margin: 10px 0 0 0;
             color: #38bdf8;
             font-weight: bold;
         }
@@ -50,39 +50,42 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 10px;
-            display: table;
-            width: 100%;
-            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border-right: 4px solid #10b981;
         }
-        .prayer-row {
-            display: table-row;
-        }
         .prayer-name {
-            display: table-cell;
             font-size: 18px;
             font-weight: bold;
-            vertical-align: middle;
             color: #f1f5f9;
         }
         .prayer-time {
-            display: table-cell;
-            text-align: left;
             font-size: 18px;
             font-weight: bold;
             color: #10b981;
-            vertical-align: middle;
         }
-        .current-prayer {
-            background: linear-gradient(to left, #065f46, #1e293b);
-            border-right: 4px solid #34d399;
+        .audio-btn {
+            background-color: #f59e0b;
+            color: #0f172a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
         }
-        .current-prayer .prayer-time {
-            color: #34d399;
+        .audio-btn.active {
+            background-color: #10b981;
+            color: white;
         }
         
-        /* تصميم قسم البوصلة المطور */
+        /* تنسيق صندوق البوصلة */
         .qibla-box {
             background: #1e293b; 
             color: white; 
@@ -137,16 +140,58 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>مواقيت الصلاة في بلسمر</h1>
-            <p id="hijri-date">التاريخ الهجري الحالي</p>
-            <div class="weather-widget">درجة الحرارة الآن: <span id="temp-value">--</span> °م</div>
+    <div class="app-container">
+        <div class="main-header">
+            <div class="location-info">
+                <h1>مواقيت الصلاة في بلسمر</h1>
+                <p id="hijri-date">جارٍ التحميل...</p>
+                <div class="weather-info">درجة الحرارة الآن: <span id="temp-value">--</span> °م</div>
+            </div>
         </div>
 
-        <div id="prayer-list">
-            </div>
+        <button id="enable-audio-btn" class="audio-btn">
+            <i class="fa-solid fa-bell-slash"></i> تفعيل المنبه الصوتي
+        </button>
 
+        <!-- قائمة مواقيت الصلاة الأصلية بالكامل -->
+        <div class="prayer-card">
+            <span class="prayer-name">الفجر</span>
+            <span class="prayer-time" id="Fajr">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">شروق الشمس</span>
+            <span class="prayer-time" id="Sunrise">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">صلاة الضحى</span>
+            <span class="prayer-time" id="Dhuha">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">الظهر</span>
+            <span class="prayer-time" id="Dhuhr">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">العصر</span>
+            <span class="prayer-time" id="Asr">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">المغرب</span>
+            <span class="prayer-time" id="Maghrib">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">العشاء</span>
+            <span class="prayer-time" id="Isha">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">منتصف الليل</span>
+            <span class="prayer-time" id="Midnight">--:--</span>
+        </div>
+        <div class="prayer-card">
+            <span class="prayer-name">الثلث الأخير</span>
+            <span class="prayer-time" id="LastThird">--:--</span>
+        </div>
+
+        <!-- قسم بوصلة اتجاه القبلة اللحظي المتفاعل -->
         <div class="qibla-box">
             <h3 style="margin-top: 0; color: #10b981;">🧭 اتجاه القبلة اللحظي</h3>
             <p id="qibla-status" style="font-size: 14px;">اضغط على الزر بالأسفل لتفعيل البوصلة</p>
@@ -164,6 +209,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=1.1"></script>
+    <script src="app.js"></script>
 </body>
 </html>
